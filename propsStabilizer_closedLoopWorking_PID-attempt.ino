@@ -1,3 +1,5 @@
+//Initial Commit.
+
 //  0.006096mm/step, or 0.000762mm/eighth step
 // to slew .2 deg:
 // (tan(0.0034 radians)*.5m ) / ( 0.000762mm * 2) = 1120 quarter steps
