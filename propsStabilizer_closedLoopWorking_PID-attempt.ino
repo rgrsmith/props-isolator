@@ -13,6 +13,8 @@
 #include <AccelStepper_closedLoop.h>
 #include <MultiStepper_closedLoop.h>
 #include <Encoder_Buffer.h>
+#include <Wire.h>
+#include <Adafruit_ADS1015.h>
 
 
 // Define a stepper and the pins it will use
@@ -58,10 +60,16 @@ int oldPos = -100;
 
 long startTime = micros();
 
+Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
+
+
 void setup()
 {  
   Serial.begin(9600);
   SPI.begin();
+
+  ads.begin();
+  
   stepper_1.init();
   stepper_2.init();
   stepper_3.init();
@@ -89,18 +97,6 @@ void setup()
   steppers.addStepper(stepper_3);
   steppers.addStepper(stepper_4);
 
-  // Set max stepper speeds
-  stepper_1.setMaxSpeed(1000);
-  stepper_1.setSpeed(1000);
-  stepper_2.setMaxSpeed(1000);
-  stepper_2.setSpeed(1000);
-  stepper_3.setMaxSpeed(1000);
-  stepper_3.setSpeed(1000);
-  //stepper_4.setMaxSpeed(1312);
-  //stepper_4.setSpeed(1312);
-  stepper_4.setMaxSpeed(1800);
-  stepper_4.setSpeed(1800);
-
 /*
   //Set motor positions to end of travel
   positions[0] = softLimit[1];
@@ -122,9 +118,21 @@ void setup()
   positions[2] = positions[0];
   positions[3] = positions[0];
     steppers.moveTo(positions);
-  steppers.runSpeedToPosition();
+  steppers.runSpeedToPosintion();
   printOnce = true;
   delay(500);
+  
+  // Set max stepper speeds
+  stepper_1.setMaxSpeed(1000);
+  stepper_1.setSpeed(1000);
+  stepper_2.setMaxSpeed(1000);
+  stepper_2.setSpeed(1000);
+  stepper_3.setMaxSpeed(1000);
+  stepper_3.setSpeed(1000);
+  //stepper_4.setMaxSpeed(1312);
+  //stepper_4.setSpeed(1312);
+  stepper_4.setMaxSpeed(6000);
+  stepper_4.setSpeed(6000);
   
 
 /*  // TIMER 1 for interrupt frequency 10 Hz:
@@ -209,7 +217,22 @@ void loop()
       //positions[2] = (softLimit[1]-softLimit[0])/2 + 200*sin(thisTime%(int(modTime)) * (2* 3.1415 / (modTime))+4*3.1415/4);
       //positions[3] = (softLimit[1]-softLimit[0])/2 + round(600*sin(thisTime%(int(modTime)) * (2.0* 3.1415 / (modTime))+4.0*3.1415/4.0));
       //Serial.println((softLimit[1]-softLimit[0])/2 +  ((analogRead(sensorPin)-512)*2));
-      positions[3] = (softLimit[1]-softLimit[0])/2 +  ((analogRead(sensorPin)-512)*2); //232-792 is 560 steps centered about 512
+      
+      
+      int16_t adc0;
+      adc0 = ads.readADC_SingleEnded(0);
+      //Serial.println(map(adc0, 6230, 20640, -560, 560));
+      
+      int16_t target = map(adc0, 6230, 20640, -560, 560);
+      positions[3] = (softLimit[1]-softLimit[0])/2 +  target; //560 nominal
+
+      //int16_t errP = positions[3] - stepper_4.currentPosition();
+
+      //positions[3] += 4* errP;
+
+      //stepper_4.setSpeed(map(errP, 0, 300, 3000, 6000));
+      
+      //positions[3] = (softLimit[1]-softLimit[0])/2 +  ((analogRead(sensorPin)-512)*2); //232-792 is 560 steps centered about 512
       //positions[3] = (digitalRead(4)*500);
       //positions[3] = (digitalRead(4)*500);
       //steppers.errorComp();
@@ -231,15 +254,19 @@ void loop()
         
       //}
       long tn = millis();
-        while (millis() < tn+10){
-          steppers.run();
+        while (millis() - tn < 10){ //100Hz for 10ms
+          //steppers.run();
+          stepper_4.run();
         }
 
-      Serial.println(micros()-startTime);
+      //Serial.println(micros()-startTime);
       startTime = micros();
       //delayMicroseconds(48);
       //delay(10);
       oldPos = positions[3];
+
+      analogWrite(9, map(adc0, 6230, 20640, 0, 255));
+      //Serial.println(map(adc0, 6230, 20640, 0, 255));
       
 }
 

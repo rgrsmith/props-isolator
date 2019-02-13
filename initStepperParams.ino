@@ -75,6 +75,6 @@ void initStepperParams() {
   stepper_4.enableOutputs();
   stepper_4.setCurrentPosition(0);
   stepper_4.setMaxSpeed(10000000000);
-  stepper_4.setAcceleration(800000);
+  stepper_4.setAcceleration(80000000000);
   // --------------------------------------------------------------------------
 }
